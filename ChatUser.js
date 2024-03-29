@@ -90,7 +90,43 @@ class ChatUser {
   }
 
   handlePrivMessage(modifiers) {
+    if (modifiers.length < 2) {
+      this._send(JSON.stringify({
+        name: "server",
+        type: "chat",
+        text: `You must specify an user and a message.`
+      }));
+    } else {
+      const toUsername = modifiers[0];
+      const message = modifiers.slice(1).join(" ");
+      let usersList = [...this.room.members];
+      const toUserInstance = usersList.find(U => U.name === toUsername);
+      if (toUsername === this.name) {
+        this._send(JSON.stringify(
+          {
+            name: "server",
+            type: "chat",
+            text: "You cannot send a message to yourself",
+          }
+        ));
+      } else {
+        toUserInstance._send(JSON.stringify(
+          {
+            name: `${this.name} (Private Message)`,
+            type: "chat",
+            text: message,
+          }
+        ));
 
+        this._send(JSON.stringify(
+          {
+            name: `${this.name} (Private Message to ${toUsername})`,
+            type: "chat",
+            text: message,
+          }
+        ));
+      }
+    }
   }
 
 
@@ -122,11 +158,11 @@ class ChatUser {
       "/members": modifiers => this.handleMembers(modifiers),
       "/priv": modifiers => this.handlePrivMessage(modifiers),
       "/name": modifiers => this.handleChangeName(modifiers)
-    }
+    };
 
     const commandPlusModifiers = text.split(' ');
     const command = commandPlusModifiers[0];
-    const modifiers = commandPlusModifiers.slice(1)
+    const modifiers = commandPlusModifiers.slice(1);
 
     commands[command](modifiers);
   }
