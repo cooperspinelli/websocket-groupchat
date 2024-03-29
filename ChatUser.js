@@ -66,7 +66,7 @@ class ChatUser {
    *
    */
 
-  handleJoke() {
+  handleJoke(modifiers) {
     this._send(JSON.stringify({
       name: "server",
       type: "chat",
@@ -78,7 +78,7 @@ class ChatUser {
    *
    */
 
-  handleMembers() {
+  handleMembers(modifiers) {
     let usersList = [...this.room.members];
     usersList = usersList.map(u => u.name);
     console.log("usersList", usersList);
@@ -89,19 +89,46 @@ class ChatUser {
     }));
   }
 
+  handlePrivMessage(modifiers) {
 
+  }
+
+
+  handleChangeName(modifiers) {
+    if (modifiers.length === 0) {
+      this._send(JSON.stringify({
+        name: "server",
+        type: "chat",
+        text: `You must specify your new name`
+      }));
+    } else {
+      const oldName = this.name;
+      this.name = modifiers[0];
+      this.room.broadcast({
+        name: "server",
+        type: "chat",
+        text: `${oldName} changed their name to ${this.name}`
+      });
+    }
+  }
 
   /** Handle command from client:
    *
    */
 
   handleCommand(text) {
-    console.log(text)
-    if (text === "/joke") {
-      this.handleJoke();
-    } else if (text === "/members") {
-      this.handleMembers();
+    const commands = {
+      "/joke": modifiers => this.handleJoke(modifiers),
+      "/members": modifiers => this.handleMembers(modifiers),
+      "/priv": modifiers => this.handlePrivMessage(modifiers),
+      "/name": modifiers => this.handleChangeName(modifiers)
     }
+
+    const commandPlusModifiers = text.split(' ');
+    const command = commandPlusModifiers[0];
+    const modifiers = commandPlusModifiers.slice(1)
+
+    commands[command](modifiers);
   }
 
   /** Handle messages from client:
