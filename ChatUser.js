@@ -62,11 +62,8 @@ class ChatUser {
     });
   }
 
-  /** Handle joke command from client:
-   *
-   */
-
-  handleJoke(modifiers) {
+  /** Handles joke command */
+  handleJoke(text) {
     this._send(JSON.stringify({
       name: "server",
       type: "chat",
@@ -74,14 +71,9 @@ class ChatUser {
     }));
   }
 
-  /** Handle member command from client:
-   *
-   */
-
-  handleMembers(modifiers) {
-    let usersList = [...this.room.members];
-    usersList = usersList.map(u => u.name);
-    console.log("usersList", usersList);
+  /** Handles members command */
+  handleMembers(text) {
+    const usersList = [...this.room.members].map(u => u.name);
     this._send(JSON.stringify({
       name: "server",
       type: "chat",
@@ -89,82 +81,92 @@ class ChatUser {
     }));
   }
 
-  handlePrivMessage(modifiers) {
-    if (modifiers.length < 2) {
-      this._send(JSON.stringify({
-        name: "server",
-        type: "chat",
-        text: `You must specify an user and a message.`
-      }));
-    } else {
-      const toUsername = modifiers[0];
-      const message = modifiers.slice(1).join(" ");
-      let usersList = [...this.room.members];
-      const toUserInstance = usersList.find(U => U.name === toUsername);
-      if (toUsername === this.name) {
-        this._send(JSON.stringify(
-          {
-            name: "server",
-            type: "chat",
-            text: "You cannot send a message to yourself",
-          }
-        ));
-      } else {
-        toUserInstance._send(JSON.stringify(
-          {
-            name: `${this.name} (Private Message)`,
-            type: "chat",
-            text: message,
-          }
-        ));
+  /** Handles private message command */
+  handlePrivMessage(text) {
+    const splitText = text.split(" ");
 
-        this._send(JSON.stringify(
-          {
-            name: `${this.name} (Private Message to ${toUsername})`,
-            type: "chat",
-            text: message,
-          }
-        ));
-      }
+    if (splitText.length < 3) {
+      this._send(JSON.stringify(
+        {
+          name: "server",
+          type: "chat",
+          text: "You must specify a user and a message",
+        }
+      ));
+      return;
     }
+
+    const toUsername = splitText[1];
+
+    if (toUsername === this.name) {
+      this._send(JSON.stringify(
+        {
+          name: "server",
+          type: "chat",
+          text: "You cannot send a message to yourself",
+        }
+      ));
+      return;
+    }
+
+    const message = splitText.slice(2).join(" ");
+    const toUserInstance = [...this.room.members].find(
+      u => u.name === toUsername);
+
+    const messageData = {
+      name: `Private Message from ${this.name} to ${toUsername}`,
+      type: "chat",
+      text: message,
+    };
+
+    toUserInstance._send(JSON.stringify(messageData));
+    this._send(JSON.stringify(messageData));
   }
 
+  /** Handles name change command */
+  handleChangeName(text) {
+    const newName = text.split(" ")[1];
 
-  handleChangeName(modifiers) {
-    if (modifiers.length === 0) {
+    if (!newName) {
       this._send(JSON.stringify({
         name: "server",
         type: "chat",
         text: `You must specify your new name`
       }));
     } else {
-      const oldName = this.name;
-      this.name = modifiers[0];
       this.room.broadcast({
         name: "server",
         type: "chat",
-        text: `${oldName} changed their name to ${this.name}`
+        text: `${this.name} changed their name to ${newName}`
       });
+
+      this.name = newName;
     }
   }
 
-  /** Handle command from client:
-   *
-   */
+  /** Handles unknown command */
+  handleUnkownCommand(text) {
+    const command = text.split(' ')[0];
+    this._send(JSON.stringify({
+      name: "server",
+      type: "chat",
+      text: `${command} is an unknown command.`
+    }));
+  }
 
+  /** Handles message that starts with / */
   handleCommand(text) {
     const commands = {
-      "/joke": modifiers => this.handleJoke(modifiers),
-      "/members": modifiers => this.handleMembers(modifiers),
-      "/priv": modifiers => this.handlePrivMessage(modifiers),
-      "/name": modifiers => this.handleChangeName(modifiers)
+      "/joke": () => this.handleJoke(text),
+      "/members": () => this.handleMembers(text),
+      "/priv": () => this.handlePrivMessage(text),
+      "/name": () => this.handleChangeName(text),
+      "unknown": () => this.handleUnkownCommand(text)
     };
 
-    const commandPlusModifiers = text.split(' ');
-    const command = commandPlusModifiers[0];
-    const modifiers = commandPlusModifiers.slice(1);
-
-    commands[command](modifiers);
+    const command = text.split(' ')[0];
+    const commandMethod = (commands[command] || commands["unknown"]);
+    commandMethod();
   }
 
   /** Handle messages from client:
