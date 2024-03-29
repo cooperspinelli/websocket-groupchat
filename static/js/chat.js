@@ -59,7 +59,16 @@ ws.onclose = function (evt) {
 function sendMessage(evt) {
   evt.preventDefault();
 
-  let data = { type: "chat", text: document.querySelector("#m").value };
+  const text = document.querySelector("#m").value;
+
+  let type;
+  if (text[0] === "\\") {
+    type = "command";
+  } else {
+    type = "chat";
+  }
+
+  const data = { type, text };
   ws.send(JSON.stringify(data));
 
   document.querySelector("#m").value = "";

@@ -62,6 +62,18 @@ class ChatUser {
     });
   }
 
+  /** Handle command from client:
+   *
+   */
+
+  handleCommand(text) {
+    this._send(JSON.stringify({
+      name: "server",
+      type: "chat",
+      text: `This is a funny joke ${text}`,
+    }));
+  }
+
   /** Handle messages from client:
    *
    * @param jsonData {string} raw message data
@@ -77,6 +89,7 @@ class ChatUser {
 
     if (msg.type === "join") this.handleJoin(msg.name);
     else if (msg.type === "chat") this.handleChat(msg.text);
+    else if (msg.type === "command") this.handleCommand(msg.text);
     else throw new Error(`bad message: ${msg.type}`);
   }
 
