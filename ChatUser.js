@@ -62,16 +62,46 @@ class ChatUser {
     });
   }
 
+  /** Handle joke command from client:
+   *
+   */
+
+  handleJoke() {
+    this._send(JSON.stringify({
+      name: "server",
+      type: "chat",
+      text: "This is a funny joke",
+    }));
+  }
+
+  /** Handle member command from client:
+   *
+   */
+
+  handleMembers() {
+    let usersList = [...this.room.members];
+    usersList = usersList.map(u => u.name);
+    console.log("usersList", usersList);
+    this._send(JSON.stringify({
+      name: "server",
+      type: "chat",
+      text: `In room: ${usersList.join(", ")}`,
+    }));
+  }
+
+
+
   /** Handle command from client:
    *
    */
 
   handleCommand(text) {
-    this._send(JSON.stringify({
-      name: "server",
-      type: "chat",
-      text: `This is a funny joke ${text}`,
-    }));
+    console.log(text)
+    if (text === "/joke") {
+      this.handleJoke();
+    } else if (text === "/members") {
+      this.handleMembers();
+    }
   }
 
   /** Handle messages from client:

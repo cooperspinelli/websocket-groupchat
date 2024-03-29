@@ -62,7 +62,7 @@ function sendMessage(evt) {
   const text = document.querySelector("#m").value;
 
   let type;
-  if (text[0] === "\\") {
+  if (text[0] === "/") {
     type = "command";
   } else {
     type = "chat";
